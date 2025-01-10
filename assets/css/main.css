@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+:root {
+    --primary: #0e3e49;
+    --secondary: #1a94b1;
+    --light: #F0FDFF;
+}
+
+body {
+    background-color: var(--primary);
+}
+
+::selection {
+    color: var(--primary);
+    background: var(--light);
+}
