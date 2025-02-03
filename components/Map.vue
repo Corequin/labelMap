@@ -1,63 +1,75 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import {useCountriesStore} from "~/stores/countries";
 
-const emit = defineEmits(['submit'])
+const countryClicked = ref<boolean>(false);
+const country = ref('');
 
-function countryClick(countryID: string) {
-  emit('submit', countryID)
-}
+const countriesStore  = useCountriesStore();
 
-onMounted(() => {
+function setMap() {
   document.querySelectorAll<SVGElement>(".allPaths").forEach(e => {
     e.setAttribute('class', `allPaths ${e.id}`);
-    e.addEventListener("mouseover", function () {
-      window.onmousemove = function (j: MouseEvent) {
-        const x = j.clientX;
-        const y = j.clientY;
-        const nameElement = document.getElementById('name');
-        if (nameElement) {
-          nameElement.style.top = `${y - 60}px`;
-          nameElement.style.left = `${x + 10}px`;
+
+    e.addEventListener("dblclick", () => {
+      likeCountry(e.id);
+    });
+
+    e.addEventListener("click", (event) => {
+      country.value = e.id;
+      countryClicked.value = true;
+      nextTick(() => {
+        const tagElement = document.getElementById('visited_tag');
+        if (tagElement) {
+          tagElement.style.left = `${event.clientX}px`;
+          tagElement.style.top = `${event.clientY - 22}px`;
         }
-      };
-      const classes = e.className.baseVal.replace(/ /g, '.');
-      document.querySelectorAll<SVGElement>(`.${classes}`).forEach(country => {
-        country.style.fill = "#16758c";
-      });
-      const nameElement = document.getElementById("name");
-      const namepElement = document.getElementById("namep");
-      if (nameElement && namepElement) {
-        nameElement.style.opacity = "1";
-        namepElement.innerText = e.id;
-      }
-    });
-
-    e.addEventListener("mouseleave", function () {
-      const classes = e.className.baseVal.replace(/ /g, '.');
-      document.querySelectorAll<SVGElement>(`.${classes}`).forEach(country => {
-        country.style.fill = "#ececec";
-      });
-
-      const nameElement = document.getElementById("name");
-      if (nameElement) {
-        nameElement.style.opacity = "0";
-      }
-    });
-
-    e.addEventListener("click", function () {
-      countryClick(e.id);
+      })
     });
   });
+}
+
+function likeCountry(country) {
+  countriesStore.toggleVisitedCountry(country);
+  countryClicked.value = false;
+}
+
+watch(() => countriesStore.countries, (countries) => {
+  document.querySelectorAll<SVGElement>(".allPaths").forEach(e => {
+    e.setAttribute('fill', '#ececec');
+    countries.forEach((country) => {
+      if(e.id === country) {
+        e.setAttribute('fill', '#d3a7be');
+      }
+    });
+  });
+});
+
+onMounted(() => {
+
+  const socket = new WebSocket('ws://localhost:4000');
+
+  socket.addEventListener("message", event => {
+    console.log(event);
+  });
+
+  document.addEventListener('mousemove', (event) => {
+    let posX = event.clientX
+    let posY = event.clientY
+    socket.send(JSON.stringify({ posX, posY }));
+  });
+
+  setMap();
 });
 </script>
 
 
 <template>
-  <div id="name">
-    <p id="namep">Name</p>
+  <div id="visited_tag" v-if="countryClicked" class="flex flex-row items-center justify-center gap-1">
+    <p id="content">Marked {{country}} as visited </p><Icon class="cursor-pointer" :name="countriesStore.isVisitedCountry(country) ? 'line-md:heart-filled' : 'line-md:heart'" @click="likeCountry(country)"/>
   </div>
   <div class="flex w-full justify-center items-center">
-    <svg id="allSvg" fill="#ececec" stroke="black" stroke-linecap="round" stroke-linejoin="round"
+    <svg id="allSvg" fill="#ececec" stroke="#594C53" stroke-linecap="round" stroke-linejoin="round"
          version="1.2" viewBox="0 0 2000 857" xmlns="http://www.w3.org/2000/svg">
       <path class="allPaths"
             d="M1383 261.6l1.5 1.8-2.9 0.8-2.4 1.1-5.9 0.8-5.3 1.3-2.4 2.8 1.9 2.7 1.4 3.2-2 2.7 0.8 2.5-0.9 2.3-5.2-0.2 3.1 4.2-3.1 1.7-1.4 3.8 1.1 3.9-1.8 1.8-2.1-0.6-4 0.9-0.2 1.7-4.1 0-2.3 3.7 0.8 5.4-6.6 2.7-3.9-0.6-0.9 1.4-3.4-0.8-5.3 1-9.6-3.3 3.9-5.8-1.1-4.1-4.3-1.1-1.2-4.1-2.7-5.1 1.6-3.5-2.5-1 0.5-4.7 0.6-8 5.9 2.5 3.9-0.9 0.4-2.9 4-0.9 2.6-2-0.2-5.1 4.2-1.3 0.3-2.2 2.9 1.7 1.6 0.2 3 0 4.3 1.4 1.8 0.7 3.4-2 2.1 1.2 0.9-2.9 3.2 0.1 0.6-0.9-0.2-2.6 1.7-2.2 3.3 1.4-0.1 2 1.7 0.3 0.9 5.4 2.7 2.1 1.5-1.4 2.2-0.6 2.5-2.9 3.8 0.5 5.4 0z"
@@ -1590,16 +1602,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
-#name {
+#visited_tag {
   position: absolute;
-  background-color: var(--light);
+  z-index: 100;
+  background-color: #c67ea6;
   width: fit-content;
-  opacity: 0;
-  border-radius: 1rem;
-  border: 3px solid var(--secondary);
-  padding: 0 8px;
-  font-size: 1.5rem;
-  color: var(--primary);
+  border-radius: 0.5rem;
+  border: 2px solid #d3a7be;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  color: white;
 }
 
 svg path {

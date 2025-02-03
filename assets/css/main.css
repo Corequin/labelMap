@@ -2,18 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles */
-:root {
-    --primary: #0e3e49;
-    --secondary: #1a94b1;
-    --light: #F0FDFF;
-}
-
 body {
-    background-color: var(--primary);
+    background-color: #99bdc5;
 }
 
 ::selection {
-    color: var(--primary);
-    background: var(--light);
+    color: #99bdc5;
+    background: #F0FDFF;
 }
