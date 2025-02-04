@@ -1,0 +1,70 @@
+<script setup lang="ts">
+interface IUser {
+  username: string;
+  posX: number;
+  posY: number;
+  visitedCountries: string[];
+}
+
+const props = defineProps<{
+  users: IUser[];
+}>();
+
+const emit = defineEmits<{
+  userClicked: (user: IUser) => void;
+}>();
+
+function getCountryFromUser(user: IUser) {
+  emit('userClicked', user);
+}
+
+function stringToColor(username: string) {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let colour = '#';
+  for (let i = 0; i < 3; i++) {
+    let value = (hash >> (i * 16)) & 0xff;
+    colour += ('00' + value.toString(16)).substr(-2);
+  }
+  return colour;
+}
+
+function stringToColorOpacity30(username: string) {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let colour = '#';
+  for (let i = 0; i < 3; i++) {
+    let value = (hash >> (i * 16)) & 0xff;
+    colour += ('00' + value.toString(16)).substr(-2);
+  }
+  return `${colour}30`;
+}
+</script>
+
+<template>
+  <div class="absolute bottom-8 right-8 flex flex-row justify-center items-start gap-2">
+    <div @click="getCountryFromUser(user)" v-for="user in props.users" :key="user.id" class="tag flex flex-row justify-center items-start bg-opacity-50" :style="{ top: `${user.posY}px`, left: `${user.posX}px`, border: `2px solid ${stringToColor(user.username)}`, background: `${stringToColorOpacity30(user.username)}`}">
+      <div class="username">{{user.username}}</div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.tag {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  padding: 4px 10px;
+  border-radius: 100px;
+  -webkit-backdrop-filter: blur(5px);
+  color: white;
+}
+
+.username {
+  font-size: 0.75rem;
+  color: white;
+}
+</style>

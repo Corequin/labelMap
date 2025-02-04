@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import {useCountriesStore} from "~/stores/countries";
+import Cursor from "~/components/Cursor.vue";
 
 const countryClicked = ref<boolean>(false);
 const country = ref('');
+const connectedUser = ref('');
+const users = ref<{username: string, posX: number, posY: number, visitedCountries: string[]}>([]);
 
 const countriesStore  = useCountriesStore();
 
@@ -21,16 +24,21 @@ function setMap() {
       nextTick(() => {
         const tagElement = document.getElementById('visited_tag');
         if (tagElement) {
-          tagElement.style.left = `${event.clientX}px`;
-          tagElement.style.top = `${event.clientY - 22}px`;
+          tagElement.style.left = `${event.clientX - 10}px`;
+          tagElement.style.top = `${event.clientY - 65}px`;
         }
       })
     });
   });
 }
 
+function getCountries(user) {
+  socket.send(JSON.stringify({ type: 'getCountries', username: user.username }));
+}
+
 function likeCountry(country) {
   countriesStore.toggleVisitedCountry(country);
+  socket.send(JSON.stringify({ type: 'visitedCountry', country }));
   countryClicked.value = false;
 }
 
@@ -49,14 +57,41 @@ onMounted(() => {
 
   const socket = new WebSocket('ws://localhost:4000');
 
+  socket.addEventListener("open", event => {
+    console.log('Connected to server', event);
+  });
+
   socket.addEventListener("message", event => {
-    console.log(event);
+    const data = JSON.parse(event.data);
+    if(data.type === 'init') {
+      connectedUser.value = data.username;
+      users.value = [...data.users];
+      return;
+    }
+    if(data.type === 'userDisconnected') {
+      users.value = [...data.users.filter(user => user.username !== connectedUser.value)];
+      return;
+    }
+    if(data.type === 'getCountries') {
+      console.log(data);
+      return;
+    }
+    if(!users.value.find(user => user.username === data.username) && data.username !== connectedUser.value) {
+      users.value.push(data);
+    } else {
+      users.value.filter(user => {
+        if(user.username === data.username) {
+          user.posX = data.posX;
+          user.posY = data.posY - 15;
+        }
+      });
+    }
   });
 
   document.addEventListener('mousemove', (event) => {
     let posX = event.clientX
     let posY = event.clientY
-    socket.send(JSON.stringify({ posX, posY }));
+    socket.send(JSON.stringify({ type: 'position', posX, posY }));
   });
 
   setMap();
@@ -65,8 +100,13 @@ onMounted(() => {
 
 
 <template>
-  <div id="visited_tag" v-if="countryClicked" class="flex flex-row items-center justify-center gap-1">
-    <p id="content">Marked {{country}} as visited </p><Icon class="cursor-pointer" :name="countriesStore.isVisitedCountry(country) ? 'line-md:heart-filled' : 'line-md:heart'" @click="likeCountry(country)"/>
+  <Users :users="users" @user-clicked="getCountries"/>
+  <Cursor v-for="user in users" :pos-x="user.posX" :pos-y="user.posY" :username="user.username"/>
+  <div id="visited_tag" v-if="countryClicked" class="flex flex-col-reverse p-2 rounded-2xl items-center justify-center gap-1">
+    <p id="content" style="color: white">{{country}}</p>
+    <div class="glass flex justify-center items-center p-1.5 rounded-full">
+      <Icon class="cursor-pointer" style="color:white" size="1.5rem" :name="countriesStore.isVisitedCountry(country) ? 'line-md:heart-filled' : 'line-md:heart'" @click="likeCountry(country)"/>
+    </div>
   </div>
   <div class="flex w-full justify-center items-center">
     <svg id="allSvg" fill="#ececec" stroke="#594C53" stroke-linecap="round" stroke-linejoin="round"
@@ -1605,12 +1645,30 @@ onMounted(() => {
 #visited_tag {
   position: absolute;
   z-index: 100;
-  background-color: #c67ea6;
   width: fit-content;
-  border-radius: 0.5rem;
-  border: 2px solid #d3a7be;
   padding: 2px 6px;
   font-size: 0.75rem;
+  color: white;
+  font-weight: bold;
+}
+
+#content {
+  background: rgba(145, 125, 140, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  padding-inline: 6px;
+  border-radius: 100px;
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(250, 250, 250, 0.25);
+  color: white;
+}
+
+.glass {
+  background: rgba(145, 125, 140, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(250, 250, 250, 0.25);
   color: white;
 }
 
