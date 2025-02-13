@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, nextTick } from 'vue'
 import {useCountriesStore} from "~/stores/countries";
 import Cursor from "~/components/Cursor.vue";
+
+const socket = new WebSocket('ws://localhost:4000');
 
 const countryClicked = ref<boolean>(false);
 const country = ref('');
 const connectedUser = ref('');
+const anotherUserCountries = ref<string[]>([]);
 const users = ref<{username: string, posX: number, posY: number, visitedCountries: string[]}>([]);
 
 const countriesStore  = useCountriesStore();
@@ -32,11 +35,11 @@ function setMap() {
   });
 }
 
-function getCountries(user) {
+function getCountries(user: string) {
   socket.send(JSON.stringify({ type: 'getCountries', username: user.username }));
 }
 
-function likeCountry(country) {
+function likeCountry(country: string) {
   countriesStore.toggleVisitedCountry(country);
   socket.send(JSON.stringify({ type: 'visitedCountry', country }));
   countryClicked.value = false;
@@ -47,15 +50,25 @@ watch(() => countriesStore.countries, (countries) => {
     e.setAttribute('fill', '#ececec');
     countries.forEach((country) => {
       if(e.id === country) {
-        e.setAttribute('fill', '#d3a7be');
+        e.setAttribute('fill', countriesStore.color);
       }
     });
   });
 });
 
+onUnmounted(() => {
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.close(1001, "Work complete");
+  }
+});
+
 onMounted(() => {
 
-  const socket = new WebSocket('ws://localhost:4000');
+  document.getElementById('allSvg')?.addEventListener('click', (e) => {
+      if (!(e.target instanceof SVGPathElement)) {
+          countryClicked.value = false;
+      }
+  });
 
   socket.addEventListener("open", event => {
     console.log('Connected to server', event);
@@ -65,6 +78,7 @@ onMounted(() => {
     const data = JSON.parse(event.data);
     if(data.type === 'init') {
       connectedUser.value = data.username;
+      countriesStore.stringToColorOpacity30(data.username);
       users.value = [...data.users];
       return;
     }
@@ -73,9 +87,12 @@ onMounted(() => {
       return;
     }
     if(data.type === 'getCountries') {
-      console.log(data);
+      anotherUserCountries.value = data.countries;
+      countriesStore.setCountries(data.countries);
+      countriesStore.stringToColorOpacity30(data.username);
       return;
     }
+
     if(!users.value.find(user => user.username === data.username) && data.username !== connectedUser.value) {
       users.value.push(data);
     } else {
@@ -100,6 +117,7 @@ onMounted(() => {
 
 
 <template>
+  <ConnectedUser v-if="connectedUser" :user="connectedUser"/>
   <Users :users="users" @user-clicked="getCountries"/>
   <Cursor v-for="user in users" :pos-x="user.posX" :pos-y="user.posY" :username="user.username"/>
   <div id="visited_tag" v-if="countryClicked" class="flex flex-col-reverse p-2 rounded-2xl items-center justify-center gap-1">

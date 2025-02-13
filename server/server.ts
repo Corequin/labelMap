@@ -1,5 +1,5 @@
 const username = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Ethan', 'Joe', 'John', 'Anna', 'Maria'];
-const users : {username: string, posX: number, posY: number, visitedCountries: string[]}[] = [];
+let users : {username: string, posX: number, posY: number, visitedCountries: string[]}[] = [];
 
 const server = Bun.serve<{ id: string }>({
     port: 4000,
@@ -20,7 +20,7 @@ const server = Bun.serve<{ id: string }>({
                 users: users
             }));
             ws.subscribe("users");
-            users.push({username: ws.data.username, posX: 0, posY: 0});
+            users.push({username: ws.data.username, posX: 0, posY: 0, visitedCountries: []});
         },
         message(ws, receivedData) {
             const data = JSON.parse(receivedData);
@@ -29,27 +29,34 @@ const server = Bun.serve<{ id: string }>({
                 users[index] = {...users[index], posX: data.posX, posY: data.posY};
                 server.publish("users", JSON.stringify(users[index]));
             } else if(data.type === "visitedCountry") {
-                const index = users.findIndex(user => user.username === ws.data.username);
-                if( !users[index].visitedCountries.includes(data.country) ) {
+                const index = users.findIndex(user => user.username === data.username);
+                if(!users[index].visitedCountries.includes(data.country) ) {
                     users[index].visitedCountries.push(data.country);
-                } else {
+                }
+            } else if(data.type === "removeVisitedCountry") {
+                const index = users.findIndex(user => user.username === data.username);
+                if(users[index].visitedCountries.includes(data.country) ) {
                     users[index].visitedCountries = users[index].visitedCountries.filter(c => c !== data.country);
                 }
             } else if(data.type === 'getCountries') {
                 const index = users.findIndex(user => user.username === data.username);
                 ws.send(JSON.stringify({
                     type: 'getCountries',
+                    username: data.username,
                     countries: users[index].visitedCountries
                 }));
             }
         },
         close(ws) {
             const index = users.findIndex(user => user.username === ws.data.username);
+            console.log("user disconnected:", users[index]);
+            console.log("before", users);
             users.splice(index, 1);
             server.publish("users", JSON.stringify({
                 type: 'userDisconnected',
                 users: users
             }));
+            console.log("after", users);
             ws.unsubscribe("users");
             username.push(ws.data.username);
         },

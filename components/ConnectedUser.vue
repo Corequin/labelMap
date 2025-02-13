@@ -1,22 +1,7 @@
 <script setup lang="ts">
-interface IUser {
-  username: string;
-  posX: number;
-  posY: number;
-  visitedCountries: string[];
-}
-
 const props = defineProps<{
-  users: IUser[];
+  user: string;
 }>();
-
-const emit = defineEmits<{
-  userClicked: (user: IUser) => void;
-}>();
-
-function getCountryFromUser(user: IUser) {
-  emit('userClicked', user);
-}
 
 function stringToColor(username: string) {
   let hash = 0;
@@ -46,25 +31,32 @@ function stringToColorOpacity30(username: string) {
 </script>
 
 <template>
-  <div class="absolute bottom-8 right-8 flex flex-row justify-center items-start gap-2 cursor-pointer">
-    <div @click="getCountryFromUser(user)" v-for="user in props.users" :key="user.id" class="tag flex flex-row justify-center items-start bg-opacity-50" :style="{ top: `${user.posY}px`, left: `${user.posX}px`, border: `2px solid ${stringToColor(user.username)}`, background: `${stringToColorOpacity30(user.username)}`}">
-      <div class="username">{{user.username}}</div>
-    </div>
+  <div class="absolute top-8 right-8 flex flex-row justify-center items-end gap-1">
+    <div class="connect" :style="{ color: `${stringToColor(user)}`}">Connected as</div>
+    <div class="username" :style="{ color: `${stringToColor(user)}`}">{{user}}</div>
   </div>
 </template>
 
 <style scoped>
 .tag {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(5px);
-  padding: 4px 10px;
+  padding: 4px;
   border-radius: 100px;
+  margin-left: 5px;
   -webkit-backdrop-filter: blur(5px);
-  color: white;
+  cursor: pointer;
+}
+
+.connect {
+  font-size: 0.85rem;
 }
 
 .username {
-  font-size: 0.75rem;
-  color: white;
+  font-size: 1rem;
+  font-weight: bold;
 }
 </style>
