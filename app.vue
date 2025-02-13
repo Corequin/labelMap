@@ -9,8 +9,8 @@ function openCountryModal(event: string) {
 </script>
 
 <template>
-    <div class="flex flex-col gap-12 w-full justify-center items-center">
-      <div class="flex flex-row w-full justify-evenly items-center mt-10">
+    <div class="relative h-screen w-full flex flex-col gap-12 justify-start items-center">
+      <div class="flex flex-row items-center mt-12">
         <div class="text-3xl text-white font-black">Interactive World Map</div>
       </div>
       <Map @country-id="openCountryModal($event)"/>
