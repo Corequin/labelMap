@@ -58,7 +58,6 @@ export const useWebSocketStore = defineStore('websocket', {
         },
 
         handleMessage(data: any) {
-            console.log('Received message:', data);
             switch (data.type) {
                 case 'init':
                     this.username = data.username;

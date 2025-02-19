@@ -5,6 +5,14 @@ const props = defineProps<{
   users: User[];
 }>();
 
+const emit = defineEmits<{
+  (e: 'selectUser', user: User): void
+}>()
+
+function spreadEvent(user: User) {
+  emit('selectUser', user);
+}
+
 function stringToColor(username: string | undefined) {
   if (!username) {
     console.warn('Username is undefined in Users component');
@@ -34,7 +42,7 @@ function stringToColorOpacity30(username: string | undefined) {
     <div
         v-for="user in props.users"
         :key="user.username || Math.random()"
-        @click="$emit('click', user)"
+        @click="spreadEvent(user)"
         class="tag flex flex-row justify-center items-start bg-opacity-50"
         :style="{
         top: `${user.posY}px`,

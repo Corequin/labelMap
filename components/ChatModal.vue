@@ -12,7 +12,6 @@ const countriesStore = useCountriesStore();
 const webSocketStore = useWebSocketStore();
 const messages = ref<Message[]>(webSocketStore.chatMessages);
 const newMessage = ref('');
-const isMinimized = ref(false);
 const showVisitedCountries = ref(false);
 const showCommonCountries = ref(false);
 
@@ -55,14 +54,6 @@ const sendMessage = () => {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
   });
-};
-
-const toggleMinimize = () => {
-  isMinimized.value = !isMinimized.value;
-  if (showVisitedCountries.value || showCommonCountries.value) {
-    showVisitedCountries.value = false;
-    showCommonCountries.value = false;
-  }
 };
 
 const toggleVisitedCountries = () => {
@@ -121,10 +112,9 @@ function stringToColorOpacity30(username: string | undefined) {
 <template>
   <div
       class="chat-modal"
-      :class="{ 'minimized': isMinimized }"
       :style="{
       borderTop: `3px solid ${stringToColor(props.user.username)}`,
-      height: isMinimized ? 'auto' : '300px'
+      height: '300px'
     }"
   >
     <div
@@ -151,12 +141,12 @@ function stringToColorOpacity30(username: string | undefined) {
         <button class="action-button" @click="toggleCommonCountries">
           <Icon name="mdi:handshake" />
         </button>
-        <button class="action-button" @click="toggleMinimize">
-          <Icon :name="isMinimized ? 'mdi:chevron-up' : 'mdi:chevron-down'" />
+        <button class="action-button" @click="$emit('close')">
+          <Icon name="mdi:times" />
         </button>
       </div>
     </div>
-    <div class="chat-content" v-if="!isMinimized">
+    <div class="chat-content">
       <div v-if="showVisitedCountries" class="countries-panel">
         <h3 class="panel-title">Pays visités par {{ props.user.username }}</h3>
         <div class="countries-list">

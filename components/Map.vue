@@ -12,7 +12,6 @@ const connectedUser = computed(() => webSocketStore.username);
 const users = computed(() => webSocketStore.users);
 const chatToUser = ref<User | undefined>(undefined);
 
-
 const countriesStore  = useCountriesStore();
 
 function setMap() {
@@ -97,7 +96,7 @@ function openModalChat(user: User) {
 <template>
   <ChatModal v-if="chatToUser" :user="chatToUser" @close="chatToUser = undefined"/>
   <ConnectedUser/>
-  <Users :users="users" @click="openModalChat($event)"/>
+  <Users :users="users" @select-user="openModalChat"/>
   <Cursor v-for="user in users" :user="user"/>
   <div id="visited_tag" v-if="countryClicked" class="flex flex-col-reverse p-2 rounded-2xl items-center justify-center gap-1">
     <p id="content" style="color: white">{{country}}</p>
