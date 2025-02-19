@@ -2,106 +2,18 @@
 import { onMounted, onUnmounted, ref, nextTick } from 'vue'
 import { useCountriesStore } from "~/stores/countries";
 import Cursor from "~/components/Cursor.vue";
-import {vi} from "cronstrue/dist/i18n/locales/vi";
+import type {User} from "~/types/types";
 
-let socket: WebSocket;
-let heartbeatInterval: NodeJS.Timeout;
-let reconnectInterval: NodeJS.Timeout;
-const MAX_RECONNECT_ATTEMPTS = 5;
-const RECONNECT_INTERVAL = 3000; // 3 seconds
-let reconnectAttempts = 0;
+const webSocketStore = useWebSocketStore();
 
 const countryClicked = ref<boolean>(false);
 const country = ref('');
-const connectedUser = ref('');
-const anotherUserCountries = ref<string[]>([]);
-const users = ref<{username: string, posX: number, posY: number, visitedCountries: string[]}>([]);
-const isConnected = ref(false);
-const viewUser = ref('');
+const connectedUser = computed(() => webSocketStore.username);
+const users = computed(() => webSocketStore.users);
+const chatToUser = ref<User | undefined>(undefined);
+
 
 const countriesStore  = useCountriesStore();
-
-function connectWebSocket() {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    console.log('WebSocket is already connected');
-    return;
-  }
-
-  socket = new WebSocket('ws://localhost:4000');
-
-  socket.addEventListener('open', event => {
-    console.log('Connected to server', event);
-    isConnected.value = true;
-    reconnectAttempts = 0;
-    startHeartbeat();
-  });
-
-  socket.addEventListener('message', handleMessage);
-
-  socket.addEventListener('close', event => {
-    console.log('WebSocket connection closed', event);
-    isConnected.value = false;
-    clearInterval(heartbeatInterval);
-
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-      console.log(`Attempting to reconnect... (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`);
-      reconnectInterval = setTimeout(connectWebSocket, RECONNECT_INTERVAL);
-      reconnectAttempts++;
-    } else {
-      console.log('Max reconnection attempts reached');
-    }
-  });
-
-  socket.addEventListener('error', error => {
-    console.error('WebSocket error:', error);
-    isConnected.value = false;
-  });
-}
-
-function handleMessage(event: MessageEvent) {
-  const data = JSON.parse(event.data);
-  if(data.type === 'init') {
-    connectedUser.value = data.username;
-    countriesStore.stringToColorOpacity30(data.username);
-    users.value = [...data.users];
-    return;
-  }
-  if(data.type === 'userDisconnected') {
-    users.value = [...data.users.filter(user => user.username !== connectedUser.value)];
-    return;
-  }
-  if(data.type === 'getCountries') {
-    anotherUserCountries.value = data.countries;
-    countriesStore.setCountries(data.countries);
-    countriesStore.stringToColorOpacity30(data.username);
-    return;
-  }
-  if(data.type === 'heartbeat_ack') {
-    return;
-  }
-
-  if(!users.value.find(user => user.username === data.username) && data.username !== connectedUser.value) {
-    users.value.push(data);
-  } else {
-    users.value.filter(user => {
-      if(user.username === data.username) {
-        user.posX = data.posX;
-        user.posY = data.posY - 15;
-      }
-    });
-  }
-}
-
-function startHeartbeat() {
-  if (heartbeatInterval) {
-    clearInterval(heartbeatInterval);
-  }
-  heartbeatInterval = setInterval(() => {
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: 'heartbeat' }));
-    }
-  }, 1000);
-}
 
 function setMap() {
   document.querySelectorAll<SVGElement>(".allPaths").forEach(e => {
@@ -125,18 +37,12 @@ function setMap() {
   });
 }
 
-function getCountries(user: string) {
-  if (socket?.readyState === WebSocket.OPEN) {
-    viewUser.value = user.username;
-    socket.send(JSON.stringify({ type: 'getCountries', username: user.username }));
-  }
-}
-
-function likeCountry(country: string) {
-  countriesStore.toggleVisitedCountry(country);
-  if (socket?.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: 'visitedCountry', country }));
-  }
+function likeCountry(countryName: string) {
+  countriesStore.toggleVisitedCountry(countryName);
+  webSocketStore.sendMessage({
+    type: 'visitedCountry',
+    countries: [...countriesStore.countries],
+  });
   countryClicked.value = false;
 }
 
@@ -152,53 +58,54 @@ watch(() => countriesStore.countries, (countries) => {
 });
 
 onUnmounted(() => {
-  console.log('Map component unmounted');
-  if (heartbeatInterval) {
-    clearInterval(heartbeatInterval);
-  }
-  if (reconnectInterval) {
-    clearTimeout(reconnectInterval);
-  }
-  if (socket?.readyState === WebSocket.OPEN) {
-    socket.close(1001, "Work complete");
-    console.log('WebSocket connection closed');
-  }
+  webSocketStore.disconnect();
+  document.removeEventListener('mousemove', handleMouseMove);
 });
 
 onMounted(() => {
-  connectWebSocket();
-
+  webSocketStore.connect();
   document.getElementById('allSvg')?.addEventListener('click', (e) => {
     if (!(e.target instanceof SVGPathElement)) {
       countryClicked.value = false;
     }
   });
-
-  document.addEventListener('mousemove', (event) => {
-    if (socket?.readyState === WebSocket.OPEN) {
-      let posX = event.clientX
-      let posY = event.clientY
-      socket.send(JSON.stringify({ type: 'position', posX, posY }));
+  watch(() => webSocketStore.connected, (isConnected) => {
+    if (isConnected) {
+      document.addEventListener('mousemove', handleMouseMove);
     }
   });
-
   setMap();
 });
+
+function handleMouseMove(event: MouseEvent) {
+  const posX = event.clientX;
+  const posY = event.clientY;
+  webSocketStore.sendMessage({
+    type: 'position',
+    posX,
+    posY
+  });
+}
+
+function openModalChat(user: User) {
+  const index = webSocketStore.users.findIndex(usr => usr.username === user.username)
+  chatToUser.value = webSocketStore.users[index];
+}
 </script>
 
 
 <template>
-  <ViewLayout v-if="viewUser" :username="viewUser" @stop-following="viewUser = ('')"/>
-  <ConnectedUser v-if="connectedUser && !viewUser" :user="connectedUser"/>
-  <Users v-if="!viewUser" :users="users" @user-clicked="getCountries"/>
-  <Cursor v-for="user in users" :pos-x="user.posX" :pos-y="user.posY" :username="user.username"/>
+  <ChatModal v-if="chatToUser" :user="chatToUser" @close="chatToUser = undefined"/>
+  <ConnectedUser/>
+  <Users :users="users" @click="openModalChat($event)"/>
+  <Cursor v-for="user in users" :user="user"/>
   <div id="visited_tag" v-if="countryClicked" class="flex flex-col-reverse p-2 rounded-2xl items-center justify-center gap-1">
     <p id="content" style="color: white">{{country}}</p>
     <div class="glass flex justify-center items-center p-1.5 rounded-full">
       <Icon class="cursor-pointer" style="color:white" size="1.5rem" :name="countriesStore.isVisitedCountry(country) ? 'line-md:heart-filled' : 'line-md:heart'" @click="likeCountry(country)"/>
     </div>
   </div>
-  <div :class="['flex', 'w-full', 'justify-center', 'items-center', viewUser ? 'pointer-events-none' : 'pointer-events-auto', viewUser ? 'cursor-none' : 'cursor-auto']">
+  <div :class="['flex', 'w-full', 'justify-center', 'items-center', chatToUser ? 'pointer-events-none' : 'pointer-events-auto', chatToUser ? 'cursor-none' : 'cursor-auto']">
     <svg id="allSvg" fill="#ececec" stroke="#594C53" stroke-linecap="round" stroke-linejoin="round"
          version="1.2" viewBox="0 0 2000 857" xmlns="http://www.w3.org/2000/svg">
       <path class="allPaths"

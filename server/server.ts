@@ -1,3 +1,5 @@
+import {IUser, type Message} from "~/types/types";
+
 const username = [
     'Lynx philosophe',
     'Kangourou turbulant',
@@ -10,7 +12,7 @@ const username = [
     'Chameau surfeur',
     'Hibou bavard'
 ];
-const users : {username: string, posX: number, posY: number, visitedCountries: string[], lastHeartbeat?: number}[] = [];
+const users : IUser[] = [];
 
 const CLEANUP_INTERVAL = 10000;
 const HEARTBEAT_TIMEOUT = 7000;
@@ -23,7 +25,6 @@ function cleanInactiveUsers(server: any) {
         inactiveUsers.forEach(user => {
             const index = users.findIndex(u => u.username === user.username);
             if (index !== -1) {
-                console.log(`Removing inactive user: ${user.username}`);
                 users.splice(index, 1);
                 username.push(user.username);
             }
@@ -58,6 +59,7 @@ const server = Bun.serve<{ id: string }>({
                 users: users
             }));
             ws.subscribe("users");
+            ws.subscribe(`chat-${ws.data.username}`);
             users.push({
                 username: ws.data.username,
                 posX: 0,
@@ -83,35 +85,44 @@ const server = Bun.serve<{ id: string }>({
             }
             else if(data.type === "visitedCountry") {
                 const index = users.findIndex(user => user.username === ws.data.username);
-                if(!users[index].visitedCountries.includes(data.country) ) {
-                    users[index].visitedCountries.push(data.country);
-                }
+                users[index].visitedCountries = [...data.countries];
             }
-            else if(data.type === "removeVisitedCountry") {
-                const index = users.findIndex(user => user.username === data.username);
-                if(users[index].visitedCountries.includes(data.country) ) {
-                    users[index].visitedCountries = users[index].visitedCountries.filter(c => c !== data.country);
-                }
-            }
-            else if(data.type === 'getCountries') {
+            else if(data.type === "getCountries") {
                 const index = users.findIndex(user => user.username === data.username);
                 ws.send(JSON.stringify({
-                    type: 'getCountries',
+                    type: "getCountries",
                     username: data.username,
                     countries: users[index].visitedCountries
+                }))
+            }
+            else if(data.type === 'chat') {
+                console.log(data);
+                const timestamp = Date.now();
+                const chatMessage: Message = {
+                    sender: ws.data.username,
+                    recipient: data.recipientUsername,
+                    text: data.message,
+                    timestamp: timestamp
+                };
+                server.publish(`chat-${data.recipientUsername}`, JSON.stringify({
+                    type: 'chat',
+                    username: ws.data.username,
+                    recipientUsername: data.recipientUsername,
+                    message: data.message,
+                    timestamp: timestamp
                 }));
             }
         },
         close(ws) {
             const index = users.findIndex(user => user.username === ws.data.username);
             if (index !== -1) {
-                console.log("User disconnected:", users[index].username);
                 users.splice(index, 1);
                 server.publish("users", JSON.stringify({
                     type: 'userDisconnected',
                     users: users
                 }));
                 ws.unsubscribe("users");
+                ws.unsubscribe(`chat-${ws.data.username}`);
                 username.push(ws.data.username);
             }
         },

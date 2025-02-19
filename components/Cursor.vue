@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type {User} from "~/types/types";
+
 const props = defineProps<{
-  username: string;
-  posX: number;
-  posY: number;
+  user: User;
 }>();
 
 function stringToColor(username: string | undefined) {
@@ -32,21 +32,21 @@ function stringToColorOpacity30(username: string | undefined) {
 <template>
   <div
       class="absolute flex flex-row justify-center items-start"
-      :style="{ top: `${props.posY}px`, left: `${props.posX}px` }"
+      :style="{ top: `${user.posY}px`, left: `${user.posX}px` }"
   >
     <Icon
         name="iconamoon:cursor-fill"
-        :style="{color: stringToColor(username)}"
+        :style="{color: stringToColor(user.username)}"
         class="mt-4"
     />
     <div
         class="tag flex flex-row justify-center items-start bg-opacity-50"
         :style="{
-        border: `2px solid ${stringToColor(username)}`,
-        background: `${stringToColorOpacity30(username)}`
+        border: `2px solid ${stringToColor(user.username)}`,
+        background: `${stringToColorOpacity30(user.username)}`
       }"
     >
-      <div class="username">{{ username || 'Anonymous' }}</div>
+      <div class="username">{{ user.username || 'Anonymous' }}</div>
     </div>
   </div>
 </template>

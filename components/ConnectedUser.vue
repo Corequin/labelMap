@@ -1,9 +1,14 @@
 <script setup lang="ts">
-const props = defineProps<{
-  user: string;
-}>();
+import {useWebSocketStore} from "~/stores/websocket";
 
-function stringToColor(username: string) {
+const webSocketStore = useWebSocketStore();
+
+function stringToColor(username: string | undefined) {
+  if (!username) {
+    console.log('Username is undefined in ConnectedUser component');
+    return '#cccccc';
+  }
+
   let hash = 0;
   for (let i = 0; i < username.length; i++) {
     hash = username.charCodeAt(i) + ((hash << 5) - hash);
@@ -19,8 +24,8 @@ function stringToColor(username: string) {
 
 <template>
   <div class="absolute top-8 right-8 flex flex-row justify-center items-end gap-1">
-    <div class="connect" :style="{ color: `${stringToColor(user)}`}">Connecté : </div>
-    <div class="username" :style="{ color: `${stringToColor(user)}`}">{{user}}</div>
+    <div class="connect">Connecté : </div>
+    <div class="username" :style="{ color: `${stringToColor(webSocketStore.username)}`}">{{webSocketStore.username}}</div>
   </div>
 </template>
 

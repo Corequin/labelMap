@@ -1,26 +1,9 @@
 <script setup lang="ts">
-interface IUser {
-  username: string;
-  posX: number;
-  posY: number;
-  visitedCountries: string[];
-}
+import type {User} from "~/types/types";
 
 const props = defineProps<{
-  users: IUser[];
+  users: User[];
 }>();
-
-const emit = defineEmits<{
-  userClicked: (user: IUser) => void;
-}>();
-
-function getCountryFromUser(user: IUser) {
-  if (!user?.username) {
-    console.warn('Attempted to get countries from user with undefined username');
-    return;
-  }
-  emit('userClicked', user);
-}
 
 function stringToColor(username: string | undefined) {
   if (!username) {
@@ -47,11 +30,11 @@ function stringToColorOpacity30(username: string | undefined) {
 </script>
 
 <template>
-  <div class="absolute bottom-8 right-8 flex flex-row justify-center items-start gap-2 cursor-pointer">
+  <div class="absolute bottom-8 left-8 flex flex-row justify-center items-start gap-2 cursor-pointer">
     <div
         v-for="user in props.users"
         :key="user.username || Math.random()"
-        @click="getCountryFromUser(user)"
+        @click="$emit('click', user)"
         class="tag flex flex-row justify-center items-start bg-opacity-50"
         :style="{
         top: `${user.posY}px`,
