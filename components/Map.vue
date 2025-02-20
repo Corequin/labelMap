@@ -7,7 +7,9 @@ import type {User} from "~/types/types";
 const webSocketStore = useWebSocketStore();
 
 const countryClicked = ref<boolean>(false);
+const countryHovered = ref<boolean>(false);
 const country = ref('');
+const hoveredCountry = ref('');
 const connectedUser = computed(() => webSocketStore.username);
 const users = computed(() => webSocketStore.users);
 const chatToUser = ref<User | undefined>(undefined);
@@ -29,7 +31,7 @@ function setMap() {
         const tagElement = document.getElementById('visited_tag');
         if (tagElement) {
           tagElement.style.left = `${event.clientX - 10}px`;
-          tagElement.style.top = `${event.clientY - 65}px`;
+          tagElement.style.top = `${event.clientY - 71.5}px`;
         }
       })
     });
@@ -68,6 +70,22 @@ onMounted(() => {
       countryClicked.value = false;
     }
   });
+  document.addEventListener('mousemove', (e) => {
+    if(e.target.id !== 'allSvg') {
+      hoveredCountry.value = e.target.id;
+      countryHovered.value = true;
+      nextTick(() => {
+        const countryElement = document.getElementById('country_tag');
+        if (countryElement) {
+          countryElement.style.left = `${event.clientX - 10}px`;
+          countryElement.style.top = `${event.clientY - 30}px`;
+        }
+      })
+    } else {
+      hoveredCountry.value = '';
+      countryHovered.value = false;
+    }
+  })
   watch(() => webSocketStore.connected, (isConnected) => {
     if (isConnected) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -103,6 +121,9 @@ function openModalChat(user: User) {
     <div class="glass flex justify-center items-center p-1.5 rounded-full">
       <Icon class="cursor-pointer" style="color:white" size="1.5rem" :name="countriesStore.isVisitedCountry(country) ? 'line-md:heart-filled' : 'line-md:heart'" @click="likeCountry(country)"/>
     </div>
+  </div>
+  <div id="country_tag" v-if="countryHovered && !countryClicked" class="flex flex-col-reverse p-2 rounded-2xl items-center justify-center gap-1">
+    <p id="content" style="color: white">{{hoveredCountry}}</p>
   </div>
   <div :class="['flex', 'w-full', 'justify-center', 'items-center', chatToUser ? 'pointer-events-none' : 'pointer-events-auto', chatToUser ? 'cursor-none' : 'cursor-auto']">
     <svg id="allSvg" fill="#ececec" stroke="#594C53" stroke-linecap="round" stroke-linejoin="round"
@@ -1638,7 +1659,7 @@ function openModalChat(user: User) {
 </template>
 
 <style scoped>
-#visited_tag {
+#visited_tag, #country_tag {
   position: absolute;
   z-index: 100;
   width: fit-content;
@@ -1670,6 +1691,10 @@ function openModalChat(user: User) {
 
 svg path {
   cursor: pointer;
+
+  &:hover {
+    fill: #fbf2f7;
+  }
 }
 
 </style>
