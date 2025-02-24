@@ -14,8 +14,8 @@ const username = [
 ];
 const users : IUser[] = [];
 
-const CLEANUP_INTERVAL = 10000;
-const HEARTBEAT_TIMEOUT = 7000;
+const CLEANUP_INTERVAL = 15000;
+const HEARTBEAT_TIMEOUT = 10000;
 
 function cleanInactiveUsers(server: any) {
     const now = Date.now();

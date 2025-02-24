@@ -13,6 +13,8 @@ const hoveredCountry = ref('');
 const connectedUser = computed(() => webSocketStore.username);
 const users = computed(() => webSocketStore.users);
 const chatToUser = ref<User | undefined>(undefined);
+const showTools = ref<boolean>(false);
+const cursorPos = ref<{posX: number; posY: number}>();
 
 const countriesStore  = useCountriesStore();
 
@@ -58,6 +60,18 @@ watch(() => countriesStore.countries, (countries) => {
   });
 });
 
+watch(() => countriesStore.color, (newColor) => {
+  const c = countriesStore.countries;
+  document.querySelectorAll<SVGElement>(".allPaths").forEach(e => {
+    e.setAttribute('fill', '#ececec');
+    c.forEach((country) => {
+      if(e.id === country) {
+        e.setAttribute('fill', newColor);
+      }
+    });
+  });
+});
+
 onUnmounted(() => {
   webSocketStore.disconnect();
   document.removeEventListener('mousemove', handleMouseMove);
@@ -70,7 +84,12 @@ onMounted(() => {
       countryClicked.value = false;
     }
   });
+  document.addEventListener('contextmenu', function(ev) {
+    ev.preventDefault();
+    showTools.value = true;
+  }, false);
   document.addEventListener('mousemove', (e) => {
+    cursorPos.value = {posX: e.clientX, posY: e.clientY};
     if(e.target.id !== 'allSvg') {
       hoveredCountry.value = e.target.id;
       countryHovered.value = true;
@@ -112,6 +131,7 @@ function openModalChat(user: User) {
 
 
 <template>
+  <Tools v-if="showTools" :pos-x="cursorPos!.posX" :pos-y="cursorPos!.posY" @close="showTools = false" />
   <ChatModal v-if="chatToUser" :user="chatToUser" @close="chatToUser = undefined"/>
   <ConnectedUser/>
   <Users :users="users" @select-user="openModalChat"/>
@@ -1691,10 +1711,6 @@ function openModalChat(user: User) {
 
 svg path {
   cursor: pointer;
-
-  &:hover {
-    fill: #fbf2f7;
-  }
 }
 
 </style>

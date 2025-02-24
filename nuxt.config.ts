@@ -11,5 +11,5 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ['@nuxt/image', '@nuxt/icon', '@pinia/nuxt'],
+  modules: ['@nuxt/image', '@nuxt/icon', '@pinia/nuxt', 'nuxt-color-picker'],
 })

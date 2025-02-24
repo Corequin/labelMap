@@ -15,6 +15,9 @@ export const useCountriesStore = defineStore('countries', {
                 this.countries = [...this.countries, country]
             }
         },
+        setColor(color: string) {
+          this.color = color
+        },
         setCountries(countries: string[]) {
             this.countries = countries;
         },

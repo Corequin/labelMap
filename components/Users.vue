@@ -67,7 +67,7 @@ function stringToColorOpacity30(username: string | undefined) {
 }
 
 .username {
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: white;
 }
 </style>

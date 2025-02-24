@@ -31,11 +31,11 @@ function stringToColor(username: string | undefined) {
 
 <style scoped>
 .connect {
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 .username {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: bold;
 }
 </style>

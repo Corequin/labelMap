@@ -1,19 +1,23 @@
 <script setup lang="ts">
-const country = ref('');
-const isModalOpen = ref<boolean>(false);
+import InfoModal from "~/components/InfoModal.vue";
 
-function openCountryModal(event: string) {
-  country.value = event;
-  isModalOpen.value = true;
+const showInfo = ref(false);
+
+function toggleInfo() {
+  showInfo.value = !showInfo.value;
 }
 </script>
 
 <template>
     <div class="relative h-screen w-full flex flex-col gap-12 justify-start items-center">
       <div class="flex flex-row items-center mt-12">
-        <div class="text-3xl text-white font-black">Interactive World Map</div>
+        <div class="flex flex-row items-center justify-center gap-4 text-3xl text-white font-black">
+          Interactive World Map
+          <Icon name="si:info-fill" class="cursor-help" @click="toggleInfo"/>
+        </div>
       </div>
-      <Map @country-id="openCountryModal($event)"/>
+      <InfoModal v-if="showInfo" @close="toggleInfo"/>
+      <Map/>
     </div>
 </template>
 
