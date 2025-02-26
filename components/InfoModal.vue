@@ -22,12 +22,12 @@
             <li><span class="font-bold">Clique droit</span> sur la page pour ouvrir la barre d'outils</li>
             <li class="flex flex-col">
               <ul class="list-disc ml-6">
-                <li>La barre d'outils propose 4 options :</li>
+                <li>La barre d'outils propose différentes options :</li>
                 <ul class="list-circle ml-6">
                   <li><span class="font-bold">Supprimer</span> tous les pays marqués en favoris</li>
                   <li><span class="font-bold">Fermer</span> la barre d'outils</li>
-                  <li><span class="font-bold">Changer la couleur</span> de surbrillance des pays</li>
                   <li><span class="font-bold">Déplacer</span> la barre d'outils en maintenant le bouton</li>
+                  <li><span class="font-bold">Changer la couleur</span> de surbrillance des pays en<br>faisant du drag-and-drop des couleurs sur la carte</li>
                 </ul>
               </ul>
             </li>
