@@ -17,7 +17,11 @@ export const useWebSocketStore = defineStore('websocket', {
                 return;
             }
 
-            this.socket = new WebSocket('ws://localhost:4000');
+            const wsUrl = process.env.NODE_ENV === 'production'
+                ? 'wss://labelmap-ws-production.up.railway.app'
+                : 'ws://localhost:4000'
+
+            this.socket = new WebSocket(wsUrl)
 
             this.socket.addEventListener('open', (event) => {
                 console.log('WebSocket connected');
