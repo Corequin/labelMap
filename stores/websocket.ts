@@ -18,7 +18,7 @@ export const useWebSocketStore = defineStore('websocket', {
             }
 
             const wsUrl = process.env.NODE_ENV === 'production'
-                ? 'wss://labelmap-ws-production.up.railway.app'
+                ? 'https://labelmap-ws-production.up.railway.app:8080'
                 : 'ws://localhost:4000'
 
             this.socket = new WebSocket(wsUrl)
