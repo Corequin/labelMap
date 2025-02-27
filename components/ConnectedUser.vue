@@ -25,7 +25,7 @@ function stringToColor(username: string | undefined) {
 <template>
   <div class="absolute top-8 right-8 flex flex-row justify-center items-end gap-1">
     <div class="connect">Connecté : </div>
-    <div class="username" :style="{ color: `${stringToColor(webSocketStore.username)}`}">{{webSocketStore.username}}</div>
+    <div class="username" :style="{ color: `${stringToColor(webSocketStore.username)}`}">{{webSocketStore.username ?? 'Anonymous'}}</div>
   </div>
 </template>
 

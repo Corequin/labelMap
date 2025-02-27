@@ -44,7 +44,7 @@ function handleColorDragEnd(event: DragEvent, color: string) {
 const webSocketStore = useWebSocketStore();
 function stringToColor(username: string | undefined) {
   if (!username) {
-    console.log('Username is undefined in ConnectedUser component');
+    console.log('Username is undefined in Tool component');
     return '#cccccc';
   }
 
